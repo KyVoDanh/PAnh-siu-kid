@@ -67,7 +67,12 @@ html, body{
   object-fit: cover;
   object-position: center center;
   display: block;
+  pointer-events: none;        /* Chặn tương tác trực tiếp vào thẻ ảnh */
+  -webkit-touch-callout: none; /* Chặn popup menu "Lưu ảnh" trên iOS Safari */
+  user-select: none;
+  -webkit-user-select: none;
 }
+
 
 .moon-glow {
   position: absolute;
