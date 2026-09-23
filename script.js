@@ -1,3 +1,4 @@
+window.addEventListener('contextmenu', (e) => e.preventDefault());
 const CONFIG = {
   recipientName: "Phương Anh",
   messages: [
@@ -5,15 +6,20 @@ const CONFIG = {
     "iu bé",
     "Phương Anh kid",
     "trung thu vui vẻ",
-    "chúc bé thật nhiều may mắn",
+    "chúc kid thật nhiều may mắn",
     "PAnh kid",
     "iu bé nhiều lắm",
     "mãi yêu bé",
-    "chúc bé luôn hạnh phúc"
+    "chúc kid luôn hạnh phúc",
+    "ráng ăn nhanh hơn nha kid"
   ],
-  images: [],
+  images: ["images/panh1.jpeg",
+    "images/panh2.webp","images/panh3.webp","images/panh4.webp",
+    "images/panh5.webp"],
   musicUrl: "",
-  stickers: [],
+  stickers: ["images/banh.png",
+    "images/den.png",
+    "images/tho.png"],
   letterLines: [
     "Trung Thu đến rồi...",
     "Anh chúc em bé của anh luôn xinh đẹp, vui vẻ và bình an.",
@@ -357,8 +363,8 @@ function createFloatingItems(){
   for (let i=0; i<TOTAL_ITEMS; i++){
     let spriteMaterial;
     const roll = Math.random();
-    const isPhoto = roll < 0.16 && photoTextures.length > 0;
-    const isSticker = !isPhoto && roll < 0.30 && stickerTextures.length > 0;
+    const isPhoto = roll < 0.35 && photoTextures.length > 0;
+    const isSticker = !isPhoto && roll < 0.65 && stickerTextures.length > 0;
 
     if (isPhoto){
       const tex = photoTextures[Math.floor(Math.random()*photoTextures.length)];
@@ -375,7 +381,7 @@ function createFloatingItems(){
     const sprite = new THREE.Sprite(spriteMaterial);
 
     if (isPhoto) sprite.scale.set(70, 95, 1);
-    else if (isSticker) sprite.scale.set(60, 60, 1);
+    else if (isSticker) sprite.scale.set(50, 50, 1);
     else sprite.scale.set(135, 34, 1);
 
     const radius = 65 + Math.random()*150;
