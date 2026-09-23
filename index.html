@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Tết Trung Thu — Gửi Phương Anh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,500&family=Quicksand:wght@400;500;600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-deep:#0a0e21;
+    --gold:#ffcf70;
+    --gold-soft:#ffe6a8;
+    --cream:#fff6e2;
+    /* Vị trí Mặt Trăng sẽ được JS cập nhật tự động khớp 100% với ảnh */
+    --moon-x: 63.87%;
+    --moon-y: 17.89%;
+    --moon-size: 110px;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+
+  *{
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body{
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    font-family: 'Quicksand', sans-serif;
+    background: var(--sky-deep);
+    color: var(--cream);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  #canvas3d {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  #intro-screen{
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    overflow: hidden;
+    background: var(--sky-deep);
+    transition: opacity 0.8s ease, visibility 0.8s;
+  }
+
+  /* Khung chứa ảnh poster gốc */
+  .intro-bg{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: var(--moon-x) var(--moon-y);
+    transform: scale(1);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.6s ease, opacity 0.8s ease-in;
+    will-change: transform, filter, opacity;
+  }
+
+  .intro-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+  }
+
+  /* Quầng sáng hiệu ứng: Ban đầu ẩn hoàn toàn để hiện nguyên bản Mặt Trăng gốc */
+  .moon-glow {
+    position: absolute;
+    top: var(--moon-y);
+    left: var(--moon-x);
+    transform: translate(-50%, -50%) scale(1);
+    width: var(--moon-size);
+    height: var(--moon-size);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 245, 200, 0.85) 0%, rgba(255, 190, 80, 0.4) 50%, rgba(0,0,0,0) 75%);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: transform 0.6s ease, opacity 0.4s ease, filter 0.6s ease;
+  }
+
+  /* 1. Khi bắt đầu nhấn giữ vào Mặt Trăng gốc */
+  #intro-screen.holding .intro-bg {
+    transform: scale(1.12);
+    transition: transform 1s cubic-bezier(0.1, 0.8, 0.2, 1);
+  }
+
+  #intro-screen.holding .moon-glow {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.4);
+    filter: drop-shadow(0 0 25px rgba(255, 215, 120, 0.9));
+    transition: transform 1s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.3s ease, filter 0.8s ease;
+  }
+
+  /* 2. Hiệu ứng phóng to xuyên qua Mặt Trăng chuyển cảnh */
+  #intro-screen.zooming .intro-bg {
+    transform: scale(9);
+    filter: brightness(2.5) blur(10px);
+    opacity: 0;
+    transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1), filter 1.1s ease, opacity 0.7s ease-in 0.2s;
+  }
+
+  #intro-screen.zooming .moon-glow {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(8);
+    transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-out;
+  }
+
+  #introCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Vùng cảm ứng khớp chính xác theo đường kính Mặt Trăng */
+  .moon-hold{
+    position: absolute; 
+    left: var(--moon-x); 
+    top: var(--moon-y);
+    transform: translate(-50%, -50%);
+    width: var(--moon-size); 
+    height: var(--moon-size);
+    border-radius: 50%; 
+    z-index: 16;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .instruction{
+    position: absolute; 
+    bottom: calc(32px + var(--sab));
+    left: 0; right: 0; 
+    text-align: center;
+    font-size: 0.92rem; 
+    letter-spacing: 0.3px;
+    color: var(--gold-soft); 
+    opacity: 0.95;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    animation: pulse 2s infinite;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    padding: 0 20px;
+    z-index: 15;
+  }
+  @keyframes pulse{ 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+  #intro-screen.holding .instruction {
+    animation: none;
+    opacity: 1;
+    color: var(--gold);
+  }
+
+  #intro-screen.zooming .moon-hold,
+  #intro-screen.zooming .instruction{
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #hint{
+    position: absolute; 
+    bottom: calc(20px + var(--sab));
+    width: 100%; 
+    text-align: center; 
+    font-size: 0.8rem;
+    color: rgba(255,246,226,0.75); 
+    z-index: 5; 
+    pointer-events: none;
+    opacity: 0; 
+    transition: opacity 1.8s ease 1s; 
+    padding: 0 16px;
+  }
+  #hint.show{ opacity: 1; }
+
+  #corner-label{
+    position: absolute; 
+    top: calc(18px + var(--sat)); 
+    left: calc(18px + var(--sal));
+    font-family: 'Playfair Display', serif; 
+    font-style: italic; 
+    font-size: 0.95rem;
+    color: var(--gold-soft); 
+    opacity: 0; 
+    z-index: 5; 
+    pointer-events: none;
+    transition: opacity 1.8s ease 1s;
+  }
+  #corner-label.show{ opacity: 0.9; }
+
+  #action-icons{
+    position: absolute; 
+    top: calc(14px + var(--sat)); 
+    right: calc(14px + var(--sar));
+    z-index: 6; 
+    display: flex; 
+    gap: 10px; 
+    opacity: 0;
+    transition: opacity 1.8s ease 1s;
+  }
+  #action-icons.show{ opacity: 1; }
+
+  .icon-btn{
+    width: 44px; 
+    height: 44px; 
+    border-radius: 50%;
+    background: rgba(20,24,48,0.7); 
+    border: 1px solid rgba(255,207,112,0.4);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    font-size: 1.25rem; 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+  .icon-btn:active { transform: scale(0.9); }
+
+  #letter-overlay{
+    position: fixed; 
+    inset: 0; 
+    z-index: 20;
+    background: rgba(4,6,16,0.82);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: calc(20px + var(--sat)) calc(16px + var(--sar)) calc(20px + var(--sab)) calc(16px + var(--sal));
+    opacity: 0; 
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s;
+  }
+  #letter-overlay.open{ opacity: 1; visibility: visible; }
+
+  .letter-card{
+    position: relative; 
+    width: 88vw; 
+    max-height: 75vh; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: linear-gradient(#f8ecc9, #f0dba4);
+    padding: 34px 18px 24px; 
+    border-radius: 6px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+    color: #6b4a1e;
+  }
+  .letter-card::before, .letter-card::after{
+    content: ""; position: absolute; left: -2px; right: -2px; height: 14px;
+    background:
+      linear-gradient(135deg, transparent 50%, #f8ecc9 50%) 0 0/16px 16px repeat-x,
+      linear-gradient(-135deg, transparent 50%, #f8ecc9 50%) 0 0/16px 16px repeat-x;
+  }
+  .letter-card::before{ top: -12px; }
+  .letter-card::after{ bottom: -12px; transform: rotate(180deg); }
+
+  .letter-inner{
+    position: absolute; 
+    inset: 8px; 
+    border: 1px dashed rgba(150,100,40,0.4);
+    border-radius: 4px; 
+    pointer-events: none;
+  }
+
+  .letter-close{
+    position: absolute; 
+    top: 6px; 
+    right: 8px; 
+    width: 36px; 
+    height: 36px; 
+    border-radius: 50%;
+    background: #f8ecc9; 
+    border: 1px solid rgba(150,100,40,0.35);
+    color: #6b4a1e; 
+    font-size: 1rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .letter-text{
+    position: relative; 
+    white-space: pre-wrap; 
+    min-height: 90px;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: 1.35rem;
+    line-height: 1.45;
+    color: #7a3d1c;
+  }
+  .letter-text .cursor{ animation: blink 1s step-end infinite; }
+  @keyframes blink{ 50%{ opacity: 0; } }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div id="intro-screen">
+    <div class="intro-bg">
+      <img id="introImg" src="https://files.catbox.moe/4ew8qp.png" alt="Tết Trung Thu">
+      <div class="moon-glow"></div>
+      <canvas id="introCanvas"></canvas>
+    </div>
+    
+    <!-- Vùng chạm khớp chính xác vị trí Mặt Trăng -->
+    <div class="moon-hold" id="moonContainer"></div>
+    <div class="instruction" id="instructionText">Nhấn giữ vào Mặt Trăng để mở món quà ✨</div>
+  </div>
+
+  <div id="corner-label">Trung Thu An Lành 🌕</div>
+  <div id="hint">✨ Chạm vuốt để xoay không gian ✨</div>
+
+  <div id="action-icons">
+    <div class="icon-btn" id="soundBtn">🔈</div>
+    <div class="icon-btn" id="envelopeBtn">💌</div>
+  </div>
+
+  <div id="letter-overlay">
+    <div class="letter-card">
+      <div class="letter-inner"></div>
+      <div class="letter-close" id="letterClose">✕</div>
+      <div class="letter-text" id="letterText"></div>
+    </div>
+  </div>
+
+  <canvas id="canvas3d"></canvas>
+  <audio id="bgMusic" loop preload="auto"></audio>
+
+<script>
+  const CONFIG = {
+    recipientName: "Phương Anh",
+    messages: [
+      "I love you",
+      "iu bé",
+      "Phương Anh kid",
+      "trung thu vui vẻ",
+      "chúc bé thật nhiều may mắn",
+      "PAnh kid",
+      "iu bé nhiều lắm",
+      "mãi yêu bé",
+      "chúc bé luôn hạnh phúc"
+    ],
+    images: [],
+    musicUrl: "",
+    stickers: [],
+    letterLines: [
+      "Trung Thu đến rồi...",
+      "Anh chúc em bé của anh luôn xinh đẹp, vui vẻ và bình an.",
+      "Dù ở đâu, anh cũng luôn nhớ và yêu em thật nhiều.",
+      "Mãi yêu em, Phương Anh."
+    ]
+  };
+
+  // === TÍNH TOÁN VỊ TRÍ MẶT TRĂNG THEO TỶ LỆ DÒNG ẢNH TRÊN ĐIỆN THOẠI ===
+  function calibrateMoonPosition() {
+    const origW = 682, origH = 1024;
+    const imgAspect = origW / origH;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const screenAspect = screenW / screenH;
+
+    let renderW, renderH, offsetX, offsetY;
+
+    if (screenAspect < imgAspect) {
+      // Màn hình điện thoại thon dài -> object-fit: cover ăn theo chiều cao
+      renderH = screenH;
+      renderW = screenH * imgAspect;
+      offsetX = (screenW - renderW) / 2;
+      offsetY = 0;
+    } else {
+      renderW = screenW;
+      renderH = screenW / imgAspect;
+      offsetX = 0;
+      offsetY = (screenH - renderH) / 2;
+    }
+
+    // Tọa độ gốc Mặt Trăng trên ảnh poster: X=63.87%, Y=17.89%, Bán kính=16.38%
+    const moonX = offsetX + 0.6387 * renderW;
+    const moonY = offsetY + 0.1789 * renderH;
+    const moonDiameter = 0.3276 * renderW;
+
+    document.documentElement.style.setProperty('--moon-x', `${moonX}px`);
+    document.documentElement.style.setProperty('--moon-y', `${moonY}px`);
+    document.documentElement.style.setProperty('--moon-size', `${moonDiameter}px`);
+  }
+
+  window.addEventListener('resize', calibrateMoonPosition);
+  window.addEventListener('DOMContentLoaded', calibrateMoonPosition);
+  calibrateMoonPosition();
+
+  const moonContainer = document.getElementById('moonContainer');
+  const introScreen = document.getElementById('intro-screen');
+  const instructionText = document.getElementById('instructionText');
+  const hint = document.getElementById('hint');
+  const cornerLabel = document.getElementById('corner-label');
+  const actionIcons = document.getElementById('action-icons');
+  const bgMusic = document.getElementById('bgMusic');
+  const soundBtn = document.getElementById('soundBtn');
+  const envelopeBtn = document.getElementById('envelopeBtn');
+  const letterOverlay = document.getElementById('letter-overlay');
+  const letterText = document.getElementById('letterText');
+  const letterClose = document.getElementById('letterClose');
+
+  if (CONFIG.musicUrl) bgMusic.src = CONFIG.musicUrl;
+  else soundBtn.style.display = 'none';
+
+  let musicPlaying = false;
+  soundBtn.addEventListener('click', () => {
+    musicPlaying = !musicPlaying;
+    if (musicPlaying){ bgMusic.play().catch(()=>{}); soundBtn.textContent = '🔊'; }
+    else { bgMusic.pause(); soundBtn.textContent = '🔈'; }
+  });
+
+  let typingTimer = null;
+  function openLetter(){
+    letterOverlay.classList.add('open');
+    letterText.innerHTML = '<span class="cursor">|</span>';
+    const full = CONFIG.letterLines.join('\n\n');
+    let i = 0;
+    clearInterval(typingTimer);
+    typingTimer = setInterval(() => {
+      i++;
+      letterText.innerHTML = full.slice(0, i) + '<span class="cursor">|</span>';
+      if (i >= full.length) clearInterval(typingTimer);
+    }, 35);
+  }
+  function closeLetter(){
+    letterOverlay.classList.remove('open');
+    clearInterval(typingTimer);
+  }
+  envelopeBtn.addEventListener('click', openLetter);
+  letterClose.addEventListener('click', closeLetter);
+  letterOverlay.addEventListener('click', (e) => { if (e.target === letterOverlay) closeLetter(); });
+
+  // === ĐÈN TRỜI & HẠT SAO TRÊN TẦNG INTRO ===
+  (function initIntroEffects() {
+    const canvas = document.getElementById('introCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resizeIntro() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeIntro);
+    resizeIntro();
+
+    const particles = [];
+    for (let i = 0; i < 30; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 1.8 + 0.5,
+        alpha: Math.random(),
+        speedAlpha: (Math.random() * 0.02 + 0.005) * (Math.random() < 0.5 ? 1 : -1),
+        speedY: (Math.random() - 0.5) * 0.25,
+        speedX: (Math.random() - 0.5) * 0.25,
+        color: Math.random() < 0.4 ? '#ffe082' : '#ffffff'
+      });
+    }
+
+    function animateIntro() {
+      if (introScreen.style.visibility === 'hidden') return;
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.alpha += p.speedAlpha;
+        if (p.alpha <= 0.1 || p.alpha >= 1) p.speedAlpha *= -1;
+        p.x += p.speedX; p.y += p.speedY;
+        if (p.x < 0) p.x = width; if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height; if (p.y > height) p.y = 0;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      requestAnimationFrame(animateIntro);
+    }
+    animateIntro();
+  })();
+
+  // === XỬ LÝ NHẤN GIỮ CHÍNH XÁC VÀO MẶT TRĂNG ===
+  let holdTimer = null;
+  let isTransitioning = false;
+  const HOLD_REQUIRED_TIME = 900; // Nhấn giữ đủ 0.9 giây
+
+  function startHold(e){
+    if (isTransitioning) return;
+    if (e.cancelable) e.preventDefault();
+    
+    introScreen.classList.add('holding');
+    instructionText.textContent = "Giữ yên một chút nhé...";
+
+    if (CONFIG.musicUrl && !musicPlaying) {
+      bgMusic.play().then(()=>{ musicPlaying = true; soundBtn.textContent = '🔊'; }).catch(()=>{});
+    }
+
+    holdTimer = setTimeout(() => {
+      isTransitioning = true;
+      introScreen.classList.remove('holding');
+      introScreen.classList.add('zooming');
+
+      setTimeout(() => {
+        introScreen.style.opacity = '0';
+        introScreen.style.visibility = 'hidden';
+        hint.classList.add('show');
+        cornerLabel.classList.add('show');
+        actionIcons.classList.add('show');
+        init3DWorld();
+      }, 1000);
+    }, HOLD_REQUIRED_TIME);
+  }
+
+  function cancelHold(){
+    if (isTransitioning) return;
+    if (holdTimer){ 
+      clearTimeout(holdTimer); 
+      holdTimer = null;
+    }
+    introScreen.classList.remove('holding');
+    instructionText.textContent = "Nhấn giữ vào Mặt Trăng để mở món quà ✨";
+  }
+
+  moonContainer.addEventListener('pointerdown', startHold);
+  window.addEventListener('pointerup', cancelHold);
+  window.addEventListener('pointercancel', cancelHold);
+  moonContainer.addEventListener('pointerleave', cancelHold);
+
+  // ============ KHÔNG GIAN 3D ============
+  let scene, camera, renderer, controls;
+  const floatingItems = [];
+  const TOTAL_ITEMS = 30;
+
+  function init3DWorld(){
+    const canvas = document.getElementById('canvas3d');
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0a0e21, 0.0016);
+
+    camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 1, 1500);
+    camera.position.set(0, 0, 370);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.enablePan = false;
+    controls.rotateSpeed = 0.6;
+    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
+    controls.minDistance = 130;
+    controls.maxDistance = 450;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+    createStarfield();
+    createCentralMoon();
+    createFloatingItems();
+    animate();
+
+    window.addEventListener('resize', onResize);
+  }
+
+  function createCentralMoon(){
+    const size = 512;
+    const colorCanvas = document.createElement('canvas');
+    colorCanvas.width = colorCanvas.height = size;
+    const ctx = colorCanvas.getContext('2d');
+
+    const bumpCanvas = document.createElement('canvas');
+    bumpCanvas.width = bumpCanvas.height = size;
+    const bCtx = bumpCanvas.getContext('2d');
+
+    ctx.fillStyle = '#f2e5cf';
+    ctx.fillRect(0, 0, size, size);
+    bCtx.fillStyle = '#808080';
+    bCtx.fillRect(0, 0, size, size);
+
+    for (let i = 0; i < 10; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const r = (50 + Math.random() * 110);
+      
+      const g = ctx.createRadialGradient(x, y, 5, x, y, r);
+      g.addColorStop(0, 'rgba(120, 100, 78, 0.45)');
+      g.addColorStop(0.7, 'rgba(145, 125, 98, 0.2)');
+      g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const r = (2 + Math.random() * 18);
+
+      ctx.strokeStyle = `rgba(255, 248, 230, ${0.35 + Math.random() * 0.4})`;
+      ctx.lineWidth = Math.max(1, r * 0.2);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      bCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      bCtx.lineWidth = Math.max(1, r * 0.25);
+      bCtx.beginPath();
+      bCtx.arc(x, y, r, 0, Math.PI * 2);
+      bCtx.stroke();
+    }
+
+    const colorTex = new THREE.CanvasTexture(colorCanvas);
+    const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+
+    const geo = new THREE.SphereGeometry(46, 48, 48);
+    const mat = new THREE.MeshStandardMaterial({
+      map: colorTex,
+      bumpMap: bumpTex,
+      bumpScale: 2.2,
+      roughness: 0.8,
+      emissive: 0xffd885,
+      emissiveIntensity: 0.28
+    });
+
+    const moon = new THREE.Mesh(geo, mat);
+    moon.position.set(0, 0, -240);
+    scene.add(moon);
+
+    const haloCanvas = document.createElement('canvas');
+    haloCanvas.width = haloCanvas.height = 256;
+    const hCtx = haloCanvas.getContext('2d');
+    const hGrad = hCtx.createRadialGradient(128, 128, 40, 128, 128, 128);
+    hGrad.addColorStop(0, 'rgba(255, 215, 130, 0.65)');
+    hGrad.addColorStop(0.35, 'rgba(255, 180, 80, 0.25)');
+    hGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    hCtx.fillStyle = hGrad;
+    hCtx.fillRect(0, 0, 256, 256);
+
+    const haloTex = new THREE.CanvasTexture(haloCanvas);
+    const haloMat = new THREE.SpriteMaterial({
+      map: haloTex,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      opacity: 0.85
+    });
+    const halo = new THREE.Sprite(haloMat);
+    halo.scale.set(150, 150, 1);
+    halo.position.set(0, 0, -240);
+    scene.add(halo);
+  }
+
+  function createTextTexture(text, isName){
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 400; 
+    canvas.height = 100;
+    ctx.font = isName ? 'italic 600 38px "Playfair Display", serif' : '600 28px Quicksand, sans-serif';
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = isName ? '#ffcf70' : '#ff9eb5';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = isName ? '#fff3c9' : '#fff6e2';
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+    
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function createFloatingItems(){
+    const textureLoader = new THREE.TextureLoader();
+    const photoTextures = CONFIG.images.map(src => textureLoader.load(src));
+    const stickerTextures = CONFIG.stickers.map(src => textureLoader.load(src));
+
+    for (let i=0; i<TOTAL_ITEMS; i++){
+      let spriteMaterial;
+      const roll = Math.random();
+      const isPhoto = roll < 0.16 && photoTextures.length > 0;
+      const isSticker = !isPhoto && roll < 0.30 && stickerTextures.length > 0;
+
+      if (isPhoto){
+        const tex = photoTextures[Math.floor(Math.random()*photoTextures.length)];
+        spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent:true });
+      } else if (isSticker){
+        const tex = stickerTextures[Math.floor(Math.random()*stickerTextures.length)];
+        spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent:true });
+      } else {
+        const isName = Math.random() < 0.3;
+        const text = isName ? CONFIG.recipientName : CONFIG.messages[Math.floor(Math.random()*CONFIG.messages.length)];
+        spriteMaterial = new THREE.SpriteMaterial({ map: createTextTexture(text, isName), transparent:true });
+      }
+
+      const sprite = new THREE.Sprite(spriteMaterial);
+
+      if (isPhoto) sprite.scale.set(70, 95, 1);
+      else if (isSticker) sprite.scale.set(60, 60, 1);
+      else sprite.scale.set(135, 34, 1);
+
+      const radius = 65 + Math.random()*150;
+      const angle = Math.random()*Math.PI*2;
+      sprite.position.x = Math.cos(angle)*radius;
+      sprite.position.z = Math.sin(angle)*radius;
+      sprite.position.y = -320 + Math.random()*640;
+
+      scene.add(sprite);
+      floatingItems.push({ mesh: sprite, speedY: 0.5 + Math.random()*0.8, startY:-320, endY:320 });
+    }
+  }
+
+  function createStarfield(){
+    const count = 350;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count*3);
+    for (let i=0;i<count*3;i++) positions[i] = (Math.random()-0.5)*1000;
+    geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    const mat = new THREE.PointsMaterial({ color:0xffffff, size:1.8, transparent:true, opacity:0.65 });
+    scene.add(new THREE.Points(geo, mat));
+  }
+
+  function animate(){
+    requestAnimationFrame(animate);
+    floatingItems.forEach(item => {
+      item.mesh.position.y += item.speedY;
+      const y = item.mesh.position.y;
+      let opacity = 1;
+      if (y < -180) opacity = (y+320)/140;
+      else if (y > 180) opacity = (320-y)/140;
+      item.mesh.material.opacity = Math.max(0, Math.min(1, opacity));
+
+      if (item.mesh.position.y > item.endY){
+        item.mesh.position.y = item.startY;
+        const radius = 65 + Math.random()*150;
+        const angle = Math.random()*Math.PI*2;
+        item.mesh.position.x = Math.cos(angle)*radius;
+        item.mesh.position.z = Math.sin(angle)*radius;
+      }
+    });
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  function onResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+</script>
+</body>
+</html>
