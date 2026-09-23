@@ -1,6 +1,6 @@
 window.addEventListener('contextmenu', (e) => e.preventDefault());
 const CONFIG = {
-  recipientName: "Phương Anh",
+  recipientName: "iu kid Phương Anh",
   messages: [
     "I love you",
     "iu bé",
@@ -249,6 +249,7 @@ const floatingItems = [];
 const TOTAL_ITEMS = 30;
 
 function init3DWorld(){
+  scene.background = new THREE.Color(0x0b1026);
   const canvas = document.getElementById('canvas3d');
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0a0e21, 0.0016);
@@ -279,9 +280,37 @@ function init3DWorld(){
   animate();
 
   window.addEventListener('resize', onResize);
+
+  // Thêm hàm tạo hạt sáng vào script.js và gọi nó trong init3DWorld():
+function createLightParticles() {
+  const particleCount = 200;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    positions[i] = (Math.random() - 0.5) * 600;     // X
+    positions[i + 1] = (Math.random() - 0.5) * 600; // Y
+    positions[i + 2] = (Math.random() - 0.5) * 600; // Z
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  // Tạo vật liệu hạt phát sáng nhẹ
+  const material = new THREE.PointsMaterial({
+    color: 0xffea9f, // Màu vàng đốm sáng Tết Trung Thu
+    size: 3,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending // Hiệu ứng cộng sáng rực rỡ
+  });
+
+  const starField = new THREE.Points(geometry, material);
+  scene.add(starField);
+}
 }
 
 function createCentralMoon(){
+ 
   const size = 512;
   const colorCanvas = document.createElement('canvas');
   colorCanvas.width = colorCanvas.height = size;
@@ -370,6 +399,28 @@ function createCentralMoon(){
 }
 
 function createTextTexture(text, isName){
+// Tìm hàm createTextTexture(text, isName) và cập nhật phần Canvas context:
+function createTextTexture(text, isName) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 512;
+  canvas.height = 128;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Bổ sung tỏa sáng (Glow effect) xung quanh chữ
+  ctx.shadowColor = isName ? '#ff3366' : '#ffd700';
+  ctx.shadowBlur = 18; // Tăng độ nhòe viền sáng
+
+  ctx.font = isName ? 'bold 36px "Segoe UI", sans-serif' : '28px "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  return new THREE.CanvasTexture(canvas);
+}
+  
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   canvas.width = 400; 
