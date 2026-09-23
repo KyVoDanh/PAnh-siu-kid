@@ -246,12 +246,12 @@ moonContainer.addEventListener('pointerleave', cancelHold);
 // ============ KHÔNG GIAN 3D ============
 let scene, camera, renderer, controls;
 const floatingItems = [];
-const TOTAL_ITEMS = 30;
+const TOTAL_ITEMS = 80; // Tăng từ 30 lên 80 để không gian chữ xuất hiện dày đặc hơn
 
 function init3DWorld(){
   const canvas = document.getElementById('canvas3d');
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b1026); // Nền xanh đêm dịu giúp làm sáng không gian
+  scene.background = new THREE.Color(0x0b1026);
   scene.fog = new THREE.FogExp2(0x0b1026, 0.0016);
 
   camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 1, 1500);
@@ -261,9 +261,9 @@ function init3DWorld(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   
-  // Tăng phơi sáng giúp ảnh và sticker sáng rõ hơn
+  // Giữ mức phơi sáng ánh sáng dịu nhẹ tự nhiên (chuẩn 1.0)
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
+  renderer.toneMappingExposure = 1.0;
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -276,12 +276,12 @@ function init3DWorld(){
   controls.minDistance = 130;
   controls.maxDistance = 450;
 
-  // Ánh sáng môi trường
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+  // Giảm ánh sáng môi trường xuống mức vừa phải (0.8)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
   createStarfield();
   createCentralMoon();
-  createLightParticles(); // Đã kích hoạt tạo hạt sáng lấp lánh
+  createLightParticles();
   createFloatingItems();
   animate();
 
@@ -429,8 +429,10 @@ function createFloatingItems(){
   for (let i=0; i<TOTAL_ITEMS; i++){
     let spriteMaterial;
     const roll = Math.random();
-    const isPhoto = roll < 0.29 && photoTextures.length > 0;
-    const isSticker = !isPhoto && roll < 0.55 && stickerTextures.length > 0;
+    
+    // Điều chỉnh tỷ lệ: ~15% Ảnh, ~15% Sticker, ~70% Lời chúc & Tên giúp không gian ngập tràn chữ
+    const isPhoto = roll < 0.15 && photoTextures.length > 0;
+    const isSticker = !isPhoto && roll < 0.30 && stickerTextures.length > 0;
 
     if (isPhoto){
       const tex = photoTextures[Math.floor(Math.random()*photoTextures.length)];
