@@ -246,7 +246,7 @@ moonContainer.addEventListener('pointerleave', cancelHold);
 // ============ KHÔNG GIAN 3D ============
 let scene, camera, renderer, controls;
 const floatingItems = [];
-const TOTAL_ITEMS = 80; // Tăng từ 30 lên 80 để không gian chữ xuất hiện dày đặc hơn
+const TOTAL_ITEMS = 60; // Tăng tổng số lượng item để không gian dày đặc hơn
 
 function init3DWorld(){
   const canvas = document.getElementById('canvas3d');
@@ -261,7 +261,7 @@ function init3DWorld(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   
-  // Giữ mức phơi sáng ánh sáng dịu nhẹ tự nhiên (chuẩn 1.0)
+  // Trả ánh sáng phơi sáng về mức chuẩn tự nhiên
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
 
@@ -276,7 +276,7 @@ function init3DWorld(){
   controls.minDistance = 130;
   controls.maxDistance = 450;
 
-  // Giảm ánh sáng môi trường xuống mức vừa phải (0.8)
+  // Ánh sáng môi trường dịu nhẹ dịu mắt
   scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
   createStarfield();
@@ -426,24 +426,24 @@ function createFloatingItems(){
   const photoTextures = CONFIG.images.map(src => textureLoader.load(src));
   const stickerTextures = CONFIG.stickers.map(src => textureLoader.load(src));
 
-  for (let i=0; i<TOTAL_ITEMS; i++){
+  for (let i = 0; i < TOTAL_ITEMS; i++){
     let spriteMaterial;
     const roll = Math.random();
     
-    // Điều chỉnh tỷ lệ: ~15% Ảnh, ~15% Sticker, ~70% Lời chúc & Tên giúp không gian ngập tràn chữ
-    const isPhoto = roll < 0.15 && photoTextures.length > 0;
-    const isSticker = !isPhoto && roll < 0.30 && stickerTextures.length > 0;
+    // Tỷ lệ xuất hiện: 10% ảnh, 10% sticker, 80% câu chúc
+    const isPhoto = roll < 0.10 && photoTextures.length > 0;
+    const isSticker = !isPhoto && roll < 0.20 && stickerTextures.length > 0;
 
     if (isPhoto){
-      const tex = photoTextures[Math.floor(Math.random()*photoTextures.length)];
-      spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent:true });
+      const tex = photoTextures[Math.floor(Math.random() * photoTextures.length)];
+      spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true });
     } else if (isSticker){
-      const tex = stickerTextures[Math.floor(Math.random()*stickerTextures.length)];
-      spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent:true });
+      const tex = stickerTextures[Math.floor(Math.random() * stickerTextures.length)];
+      spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true });
     } else {
-      const isName = Math.random() < 0.3;
-      const text = isName ? CONFIG.recipientName : CONFIG.messages[Math.floor(Math.random()*CONFIG.messages.length)];
-      spriteMaterial = new THREE.SpriteMaterial({ map: createTextTexture(text, isName), transparent:true });
+      const isName = Math.random() < 0.2; // 20% hiện tên recipientName, 80% hiện câu chúc
+      const text = isName ? CONFIG.recipientName : CONFIG.messages[Math.floor(Math.random() * CONFIG.messages.length)];
+      spriteMaterial = new THREE.SpriteMaterial({ map: createTextTexture(text, isName), transparent: true });
     }
 
     const sprite = new THREE.Sprite(spriteMaterial);
@@ -452,24 +452,24 @@ function createFloatingItems(){
     else if (isSticker) sprite.scale.set(50, 50, 1);
     else sprite.scale.set(135, 34, 1);
 
-    const radius = 65 + Math.random()*150;
-    const angle = Math.random()*Math.PI*2;
-    sprite.position.x = Math.cos(angle)*radius;
-    sprite.position.z = Math.sin(angle)*radius;
-    sprite.position.y = -320 + Math.random()*640;
+    const radius = 65 + Math.random() * 150;
+    const angle = Math.random() * Math.PI * 2;
+    sprite.position.x = Math.cos(angle) * radius;
+    sprite.position.z = Math.sin(angle) * radius;
+    sprite.position.y = -320 + Math.random() * 640;
 
     scene.add(sprite);
-    floatingItems.push({ mesh: sprite, speedY: 0.5 + Math.random()*0.8, startY:-320, endY:320 });
+    floatingItems.push({ mesh: sprite, speedY: 0.5 + Math.random() * 0.8, startY: -320, endY: 320 });
   }
 }
 
 function createStarfield(){
   const count = 350;
   const geo = new THREE.BufferGeometry();
-  const positions = new Float32Array(count*3);
-  for (let i=0;i<count*3;i++) positions[i] = (Math.random()-0.5)*1000;
-  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  const mat = new THREE.PointsMaterial({ color:0xffffff, size:1.8, transparent:true, opacity:0.65 });
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count * 3; i++) positions[i] = (Math.random() - 0.5) * 1000;
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, transparent: true, opacity: 0.65 });
   scene.add(new THREE.Points(geo, mat));
 }
 
@@ -479,16 +479,16 @@ function animate(){
     item.mesh.position.y += item.speedY;
     const y = item.mesh.position.y;
     let opacity = 1;
-    if (y < -180) opacity = (y+320)/140;
-    else if (y > 180) opacity = (320-y)/140;
+    if (y < -180) opacity = (y + 320) / 140;
+    else if (y > 180) opacity = (320 - y) / 140;
     item.mesh.material.opacity = Math.max(0, Math.min(1, opacity));
 
     if (item.mesh.position.y > item.endY){
       item.mesh.position.y = item.startY;
-      const radius = 65 + Math.random()*150;
-      const angle = Math.random()*Math.PI*2;
-      item.mesh.position.x = Math.cos(angle)*radius;
-      item.mesh.position.z = Math.sin(angle)*radius;
+      const radius = 65 + Math.random() * 150;
+      const angle = Math.random() * Math.PI * 2;
+      item.mesh.position.x = Math.cos(angle) * radius;
+      item.mesh.position.z = Math.sin(angle) * radius;
     }
   });
   controls.update();
