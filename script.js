@@ -246,7 +246,7 @@ moonContainer.addEventListener('pointerleave', cancelHold);
 // ============ KHÔNG GIAN 3D ============
 let scene, camera, renderer, controls;
 const floatingItems = [];
-const TOTAL_ITEMS = 60; // Tăng tổng số lượng item để không gian dày đặc hơn
+const TOTAL_ITEMS = 60; // Số lượng item dạt dào chữ
 
 function init3DWorld(){
   const canvas = document.getElementById('canvas3d');
@@ -261,7 +261,6 @@ function init3DWorld(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   
-  // Trả ánh sáng phơi sáng về mức chuẩn tự nhiên
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
 
@@ -276,7 +275,6 @@ function init3DWorld(){
   controls.minDistance = 130;
   controls.maxDistance = 450;
 
-  // Ánh sáng môi trường dịu nhẹ dịu mắt
   scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
   createStarfield();
@@ -401,6 +399,7 @@ function createCentralMoon(){
   scene.add(halo);
 }
 
+// HÀM VẼ CHỮ PHÁT SÁNG CẢI TIẾN
 function createTextTexture(text, isName) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -409,18 +408,27 @@ function createTextTexture(text, isName) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.shadowColor = isName ? '#ff3366' : '#ffd700';
-  ctx.shadowBlur = 18;
+  const glowColor = isName ? '#ff3366' : '#ffe066';
 
-  ctx.font = isName ? 'bold 36px "Segoe UI", sans-serif' : '28px "Segoe UI", sans-serif';
-  ctx.fillStyle = '#ffffff';
+  ctx.font = isName ? 'bold 38px "Segoe UI", sans-serif' : 'bold 30px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  // Lớp hào quang phát sáng
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 30;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  // Lõi chữ sắc nét
+  ctx.shadowBlur = 0;
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
   return new THREE.CanvasTexture(canvas);
 }
 
+// HÀM TẠO VẬT THỂ VỚI HIỆU ỨNG CỘNG HƯỞNG ÁNH SÁNG
 function createFloatingItems(){
   const textureLoader = new THREE.TextureLoader();
   const photoTextures = CONFIG.images.map(src => textureLoader.load(src));
@@ -430,7 +438,6 @@ function createFloatingItems(){
     let spriteMaterial;
     const roll = Math.random();
     
-    // Tỷ lệ xuất hiện: 10% ảnh, 10% sticker, 80% câu chúc
     const isPhoto = roll < 0.10 && photoTextures.length > 0;
     const isSticker = !isPhoto && roll < 0.20 && stickerTextures.length > 0;
 
@@ -441,9 +448,15 @@ function createFloatingItems(){
       const tex = stickerTextures[Math.floor(Math.random() * stickerTextures.length)];
       spriteMaterial = new THREE.SpriteMaterial({ map: tex, transparent: true });
     } else {
-      const isName = Math.random() < 0.2; // 20% hiện tên recipientName, 80% hiện câu chúc
+      const isName = Math.random() < 0.2;
       const text = isName ? CONFIG.recipientName : CONFIG.messages[Math.floor(Math.random() * CONFIG.messages.length)];
-      spriteMaterial = new THREE.SpriteMaterial({ map: createTextTexture(text, isName), transparent: true });
+      
+      // Thêm AdditiveBlending tạo hiệu ứng Neon cho chữ
+      spriteMaterial = new THREE.SpriteMaterial({ 
+        map: createTextTexture(text, isName), 
+        transparent: true,
+        blending: THREE.AdditiveBlending 
+      });
     }
 
     const sprite = new THREE.Sprite(spriteMaterial);
