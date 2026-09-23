@@ -395,8 +395,8 @@ function createFloatingItems(){
   for (let i=0; i<TOTAL_ITEMS; i++){
     let spriteMaterial;
     const roll = Math.random();
-    const isPhoto = roll < 0.35 && photoTextures.length > 0;
-    const isSticker = !isPhoto && roll < 0.65 && stickerTextures.length > 0;
+    const isPhoto = roll < 0.29 && photoTextures.length > 0;
+    const isSticker = !isPhoto && roll < 0.55 && stickerTextures.length > 0;
 
     if (isPhoto){
       const tex = photoTextures[Math.floor(Math.random()*photoTextures.length)];
