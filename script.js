@@ -165,20 +165,37 @@ letterOverlay.addEventListener('click', (e) => { if (e.target === letterOverlay)
 })();
 
 // === XỬ LÝ NHẤN GIỮ CHÍNH XÁC VÀO MẶT TRĂNG ===
+// === XỬ LÝ ÂM THANH TỐI ƯU CHO ĐIỆN THOẠI (iOS / ANDROID) ===
+let isAudioPrepared = false;
+
+// Hàm mở khóa quyền phát âm thanh ngay khi người dùng chạm tay vào màn hình
+function prepareAudioForMobile() {
+  if (!isAudioPrepared && CONFIG.musicUrl) {
+    bgMusic.volume = 0; // Để âm lượng bằng 0
+    bgMusic.play().then(() => {
+      bgMusic.pause(); // Tạm dừng ngay
+      bgMusic.volume = 1; // Khôi phục âm lượng chuẩn
+      isAudioPrepared = true;
+    }).catch(() => {
+      // Bỏ qua lỗi trình duyệt nếu chưa sẵn sàng
+    });
+  }
+}
+
+// === XỬ LÝ NHẤN GIỮ CHÍNH XÁC VÀO MẶT TRĂNG ===
 let holdTimer = null;
 let isTransitioning = false;
-const HOLD_REQUIRED_TIME = 900;
+const HOLD_REQUIRED_TIME = 900; // Nhấn giữ đủ 0.9 giây
 
 function startHold(e){
   if (isTransitioning) return;
   if (e.cancelable) e.preventDefault();
   
+  // Mở khóa âm thanh điện thoại ngay tại thao tác bấm của người dùng
+  prepareAudioForMobile();
+
   introScreen.classList.add('holding');
   instructionText.textContent = "Giữ yên một chút nhé...";
-
-  if (CONFIG.musicUrl && !musicPlaying) {
-    bgMusic.play().then(()=>{ musicPlaying = true; soundBtn.textContent = '🔊'; }).catch(()=>{});
-  }
 
   holdTimer = setTimeout(() => {
     isTransitioning = true;
@@ -191,8 +208,23 @@ function startHold(e){
       hint.classList.add('show');
       cornerLabel.classList.add('show');
       actionIcons.classList.add('show');
+      
+      // KHỞI TẠO KHÔNG GIAN 3D
       init3DWorld();
-    }, 1000);
+
+      // PHÁT NHẠC CHÍNH THỨC SAU KHI ĐÃ CHUYỂN CẢNH HOÀN TOÀN
+      if (CONFIG.musicUrl) {
+        bgMusic.currentTime = 0; // Phát từ đầu
+        bgMusic.volume = 1;
+        bgMusic.play().then(() => {
+          musicPlaying = true;
+          soundBtn.textContent = '🔊';
+        }).catch((err) => {
+          console.log("Cần chạm vào nút loa để bật nhạc:", err);
+        });
+      }
+
+    }, 1000); // Khớp với thời gian hiệu ứng phóng to 1 giây
   }, HOLD_REQUIRED_TIME);
 }
 
