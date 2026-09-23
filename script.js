@@ -16,7 +16,7 @@ const CONFIG = {
   images: ["images/panh1.jpeg",
     "images/panh2.webp","images/panh3.webp","images/panh4.webp",
     "images/panh5.webp"],
-  musicUrl: "images/nhac_trung_thu.mp3",
+  musicUrl: "images/kid.mp3",
   stickers: ["images/banh.png",
     "images/den.png",
     "images/tho.png"],
