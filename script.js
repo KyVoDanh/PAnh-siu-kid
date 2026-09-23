@@ -1,4 +1,5 @@
 window.addEventListener('contextmenu', (e) => e.preventDefault());
+
 const CONFIG = {
   recipientName: "iu kid Phương Anh",
   messages: [
@@ -13,13 +14,19 @@ const CONFIG = {
     "chúc kid luôn hạnh phúc",
     "ráng ăn nhanh hơn nha kid"
   ],
-  images: ["images/panh1.jpeg",
-    "images/panh2.webp","images/panh3.webp","images/panh4.webp",
-    "images/panh5.webp"],
+  images: [
+    "images/panh1.jpeg",
+    "images/panh2.webp",
+    "images/panh3.webp",
+    "images/panh4.webp",
+    "images/panh5.webp"
+  ],
   musicUrl: "images/kid.mp3",
-  stickers: ["images/banh.png",
+  stickers: [
+    "images/banh.png",
     "images/den.png",
-    "images/tho.png"],
+    "images/tho.png"
+  ],
   letterLines: [
     "Trung Thu đến rồi...",
     "Anh chúc em bé của anh luôn xinh đẹp, vui vẻ và bình an.",
@@ -164,34 +171,29 @@ letterOverlay.addEventListener('click', (e) => { if (e.target === letterOverlay)
   animateIntro();
 })();
 
-// === XỬ LÝ NHẤN GIỮ CHÍNH XÁC VÀO MẶT TRĂNG ===
 // === XỬ LÝ ÂM THANH TỐI ƯU CHO ĐIỆN THOẠI (iOS / ANDROID) ===
 let isAudioPrepared = false;
 
-// Hàm mở khóa quyền phát âm thanh ngay khi người dùng chạm tay vào màn hình
 function prepareAudioForMobile() {
   if (!isAudioPrepared && CONFIG.musicUrl) {
-    bgMusic.volume = 0; // Để âm lượng bằng 0
+    bgMusic.volume = 0;
     bgMusic.play().then(() => {
-      bgMusic.pause(); // Tạm dừng ngay
-      bgMusic.volume = 1; // Khôi phục âm lượng chuẩn
+      bgMusic.pause();
+      bgMusic.volume = 1;
       isAudioPrepared = true;
-    }).catch(() => {
-      // Bỏ qua lỗi trình duyệt nếu chưa sẵn sàng
-    });
+    }).catch(() => {});
   }
 }
 
 // === XỬ LÝ NHẤN GIỮ CHÍNH XÁC VÀO MẶT TRĂNG ===
 let holdTimer = null;
 let isTransitioning = false;
-const HOLD_REQUIRED_TIME = 900; // Nhấn giữ đủ 0.9 giây
+const HOLD_REQUIRED_TIME = 900;
 
 function startHold(e){
   if (isTransitioning) return;
   if (e.cancelable) e.preventDefault();
   
-  // Mở khóa âm thanh điện thoại ngay tại thao tác bấm của người dùng
   prepareAudioForMobile();
 
   introScreen.classList.add('holding');
@@ -209,12 +211,10 @@ function startHold(e){
       cornerLabel.classList.add('show');
       actionIcons.classList.add('show');
       
-      // KHỞI TẠO KHÔNG GIAN 3D
       init3DWorld();
 
-      // PHÁT NHẠC CHÍNH THỨC SAU KHI ĐÃ CHUYỂN CẢNH HOÀN TOÀN
       if (CONFIG.musicUrl) {
-        bgMusic.currentTime = 0; // Phát từ đầu
+        bgMusic.currentTime = 0;
         bgMusic.volume = 1;
         bgMusic.play().then(() => {
           musicPlaying = true;
@@ -224,7 +224,7 @@ function startHold(e){
         });
       }
 
-    }, 1000); // Khớp với thời gian hiệu ứng phóng to 1 giây
+    }, 1000);
   }, HOLD_REQUIRED_TIME);
 }
 
@@ -249,10 +249,10 @@ const floatingItems = [];
 const TOTAL_ITEMS = 30;
 
 function init3DWorld(){
-  scene.background = new THREE.Color(0x0b1026);
   const canvas = document.getElementById('canvas3d');
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0a0e21, 0.0016);
+  scene.background = new THREE.Color(0x0b1026); // Nền xanh đêm dịu giúp làm sáng không gian
+  scene.fog = new THREE.FogExp2(0x0b1026, 0.0016);
 
   camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 1, 1500);
   camera.position.set(0, 0, 370);
@@ -260,6 +260,10 @@ function init3DWorld(){
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
+  // Tăng phơi sáng giúp ảnh và sticker sáng rõ hơn
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.4;
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -272,45 +276,44 @@ function init3DWorld(){
   controls.minDistance = 130;
   controls.maxDistance = 450;
 
-  scene.add(new THREE.AmbientLight(0xffffff, 1));
+  // Ánh sáng môi trường
+  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
 
   createStarfield();
   createCentralMoon();
+  createLightParticles(); // Đã kích hoạt tạo hạt sáng lấp lánh
   createFloatingItems();
   animate();
 
   window.addEventListener('resize', onResize);
+}
 
-  // Thêm hàm tạo hạt sáng vào script.js và gọi nó trong init3DWorld():
 function createLightParticles() {
   const particleCount = 200;
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(particleCount * 3);
 
   for (let i = 0; i < particleCount * 3; i += 3) {
-    positions[i] = (Math.random() - 0.5) * 600;     // X
-    positions[i + 1] = (Math.random() - 0.5) * 600; // Y
-    positions[i + 2] = (Math.random() - 0.5) * 600; // Z
+    positions[i] = (Math.random() - 0.5) * 600;
+    positions[i + 1] = (Math.random() - 0.5) * 600;
+    positions[i + 2] = (Math.random() - 0.5) * 600;
   }
 
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-  // Tạo vật liệu hạt phát sáng nhẹ
   const material = new THREE.PointsMaterial({
-    color: 0xffea9f, // Màu vàng đốm sáng Tết Trung Thu
+    color: 0xffea9f,
     size: 3,
     transparent: true,
     opacity: 0.8,
-    blending: THREE.AdditiveBlending // Hiệu ứng cộng sáng rực rỡ
+    blending: THREE.AdditiveBlending
   });
 
   const starField = new THREE.Points(geometry, material);
   scene.add(starField);
 }
-}
 
 function createCentralMoon(){
- 
   const size = 512;
   const colorCanvas = document.createElement('canvas');
   colorCanvas.width = colorCanvas.height = size;
@@ -398,8 +401,6 @@ function createCentralMoon(){
   scene.add(halo);
 }
 
-function createTextTexture(text, isName){
-// Tìm hàm createTextTexture(text, isName) và cập nhật phần Canvas context:
 function createTextTexture(text, isName) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -408,9 +409,8 @@ function createTextTexture(text, isName) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Bổ sung tỏa sáng (Glow effect) xung quanh chữ
   ctx.shadowColor = isName ? '#ff3366' : '#ffd700';
-  ctx.shadowBlur = 18; // Tăng độ nhòe viền sáng
+  ctx.shadowBlur = 18;
 
   ctx.font = isName ? 'bold 36px "Segoe UI", sans-serif' : '28px "Segoe UI", sans-serif';
   ctx.fillStyle = '#ffffff';
@@ -419,23 +419,6 @@ function createTextTexture(text, isName) {
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
   return new THREE.CanvasTexture(canvas);
-}
-  
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = 400; 
-  canvas.height = 100;
-  ctx.font = isName ? 'italic 600 38px "Playfair Display", serif' : '600 28px Quicksand, sans-serif';
-  ctx.textAlign = 'center'; 
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = isName ? '#ffcf70' : '#ff9eb5';
-  ctx.shadowBlur = 12;
-  ctx.fillStyle = isName ? '#fff3c9' : '#fff6e2';
-  ctx.fillText(text, canvas.width/2, canvas.height/2);
-  
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
 }
 
 function createFloatingItems(){
